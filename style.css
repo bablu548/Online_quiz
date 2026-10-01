@@ -13,17 +13,16 @@ body {
 }
 
 .container {
-    width: 90%;
-    max-width: 650px;
+    width: 92%;
+    max-width: 700px;
     background: white;
-    padding: 35px;
+    padding: 30px;
     border-radius: 18px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.25);
 }
 
 h1 {
     text-align: center;
-    margin-bottom: 10px;
 }
 
 .subtitle {
@@ -45,7 +44,6 @@ select {
 label {
     display: block;
     font-weight: bold;
-    margin-top: 5px;
 }
 
 button {
@@ -58,11 +56,11 @@ button {
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
-    margin-top: 15px;
+    margin-top: 12px;
 }
 
 button:hover {
-    background: #5568d8;
+    opacity: 0.9;
 }
 
 .quizHeader {
@@ -71,6 +69,10 @@ button:hover {
     font-size: 17px;
     font-weight: bold;
     margin-bottom: 15px;
+}
+
+.timer {
+    color: #e53935;
 }
 
 .progress {
@@ -92,7 +94,6 @@ button:hover {
 #question {
     font-size: 21px;
     line-height: 1.5;
-    margin-bottom: 25px;
 }
 
 .option {
@@ -101,7 +102,6 @@ button:hover {
     border: 2px solid #ddd;
     border-radius: 9px;
     cursor: pointer;
-    transition: 0.2s;
 }
 
 .option:hover {
@@ -113,19 +113,132 @@ button:hover {
     border-color: #667eea;
 }
 
-.resultBox {
-    text-align: center;
-    background: #f5f6ff;
-    padding: 25px;
-    border-radius: 12px;
-    margin: 25px 0;
+.buttons {
+    display: flex;
+    gap: 10px;
 }
 
-.resultBox p {
-    font-size: 19px;
+.buttons button {
+    flex: 1;
+}
+
+.reviewBtn {
+    background: #ff9800;
+}
+
+#reviewStatus {
+    text-align: center;
+    margin-top: 10px;
+    font-weight: bold;
+    color: #ff9800;
+}
+
+
+/* RESULT */
+
+.resultBox {
+    background: #f5f6ff;
+    padding: 20px;
+    border-radius: 12px;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.stats div {
+    padding: 12px;
+    border-radius: 8px;
+    background: white;
+}
+
+.stats b {
+    display: block;
+    font-size: 25px;
+}
+
+.stats span {
+    font-size: 13px;
+}
+
+.correct b {
+    color: green;
+}
+
+.wrong b {
+    color: red;
+}
+
+.unanswered b {
+    color: orange;
 }
 
 #resultPercentage {
-    font-size: 28px !important;
+    font-size: 30px;
     font-weight: bold;
+}
+
+
+/* ANSWER REVIEW */
+
+.reviewCard {
+    padding: 18px;
+    margin: 15px 0;
+    border-radius: 10px;
+    border: 2px solid #ddd;
+}
+
+.reviewCard.correctCard {
+    border-color: #28a745;
+    background: #f0fff4;
+}
+
+.reviewCard.wrongCard {
+    border-color: #dc3545;
+    background: #fff5f5;
+}
+
+.reviewCard.unansweredCard {
+    border-color: #ff9800;
+    background: #fff9ed;
+}
+
+.reviewQuestion {
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+.correctText {
+    color: green;
+    font-weight: bold;
+}
+
+.wrongText {
+    color: red;
+    font-weight: bold;
+}
+
+.correctAnswer {
+    color: green;
+    font-weight: bold;
+}
+
+@media (max-width: 600px) {
+
+    .container {
+        padding: 20px;
+    }
+
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .buttons {
+        flex-direction: column;
+    }
+
 }
