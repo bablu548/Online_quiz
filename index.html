@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,6 +22,7 @@
                placeholder="Enter your name">
 
         <label>Category</label>
+
         <select id="category">
             <option value="9">General Knowledge</option>
             <option value="18">Computer Science</option>
@@ -31,6 +33,7 @@
         </select>
 
         <label>Difficulty</label>
+
         <select id="difficulty">
             <option value="">Any Difficulty</option>
             <option value="easy">Easy</option>
@@ -39,6 +42,7 @@
         </select>
 
         <label>Number of Questions</label>
+
         <select id="amount">
             <option value="5">5 Questions</option>
             <option value="10" selected>10 Questions</option>
@@ -55,8 +59,13 @@
     <div id="quizScreen" style="display:none;">
 
         <div class="quizHeader">
+
             <span id="questionNumber"></span>
-            <span>⏱ <b id="timer">60</b>s</span>
+
+            <span class="timer">
+                ⏱ <b id="timer">30</b>s
+            </span>
+
         </div>
 
         <div class="progress">
@@ -67,9 +76,20 @@
 
         <div id="options"></div>
 
-        <button onclick="nextQuestion()">
-            NEXT
-        </button>
+        <div class="buttons">
+
+            <button class="reviewBtn"
+                    onclick="markReview()">
+                🚩 Mark Review
+            </button>
+
+            <button onclick="saveNext()">
+                💾 Save & Next
+            </button>
+
+        </div>
+
+        <div id="reviewStatus"></div>
 
     </div>
 
@@ -83,16 +103,40 @@
 
             <h2 id="resultName"></h2>
 
-            <p id="resultScore"></p>
+            <div class="stats">
+
+                <div>
+                    <b id="totalQuestions">0</b>
+                    <span>Total</span>
+                </div>
+
+                <div class="correct">
+                    <b id="correctAnswers">0</b>
+                    <span>Correct</span>
+                </div>
+
+                <div class="wrong">
+                    <b id="wrongAnswers">0</b>
+                    <span>Wrong</span>
+                </div>
+
+                <div class="unanswered">
+                    <b id="unanswered">0</b>
+                    <span>Unanswered</span>
+                </div>
+
+            </div>
 
             <p id="resultPercentage"></p>
 
-            <p id="resultMessage"></p>
-
         </div>
 
+        <h2>Answer Review</h2>
+
+        <div id="answerReview"></div>
+
         <button onclick="location.reload()">
-            TAKE QUIZ AGAIN
+            🔄 TAKE QUIZ AGAIN
         </button>
 
     </div>
