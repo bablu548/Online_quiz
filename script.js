@@ -1,211 +1,365 @@
+// =====================================================
+// ONLINE QUIZ SYSTEM
+// =====================================================
+
+
+// ================= GLOBAL VARIABLES =================
+
 let questions = [];
 
 let currentQuestion = 0;
 
-let score = 0;
-
-let selectedAnswer = null;
-
 let studentName = "";
-
-let timeLeft = 30;
-
-let timer;
 
 let userAnswers = [];
 
 let reviewQuestions = [];
 
+let timer;
 
-// START QUIZ
+let timeLeft = 30;
+
+
+// ================= START QUIZ =================
+
 async function startQuiz() {
 
     studentName =
-        document.getElementById("studentName").value.trim();
+        document
+            .getElementById("studentName")
+            .value
+            .trim();
+
 
     if (studentName === "") {
+
         alert("Please enter your name");
+
         return;
     }
 
+
     let category =
-        document.getElementById("category").value;
+        document
+            .getElementById("category")
+            .value;
+
 
     let difficulty =
-        document.getElementById("difficulty").value;
+        document
+            .getElementById("difficulty")
+            .value;
+
 
     let amount =
-        document.getElementById("amount").value;
+        document
+            .getElementById("amount")
+            .value;
+
+
+    // API URL
 
     let url =
         `https://opentdb.com/api.php?amount=${amount}&category=${category}&type=multiple`;
 
+
     if (difficulty !== "") {
-        url += `&difficulty=${difficulty}`;
+
+        url +=
+            `&difficulty=${difficulty}`;
     }
 
-    document.getElementById("startScreen").style.display =
-        "none";
 
-    document.getElementById("quizScreen").style.display =
-        "block";
+    // Hide start screen
 
-    document.getElementById("question").innerText =
+    document
+        .getElementById("startScreen")
+        .style.display = "none";
+
+
+    // Show quiz
+
+    document
+        .getElementById("quizScreen")
+        .style.display = "block";
+
+
+    document
+        .getElementById("question")
+        .innerText =
         "Loading questions...";
+
 
     try {
 
-        const response = await fetch(url);
+        const response =
+            await fetch(url);
 
-        const data = await response.json();
+
+        const data =
+            await response.json();
+
+
+        // Check API response
 
         if (data.response_code !== 0) {
 
-            alert("Not enough questions available.");
+            alert(
+                "Not enough questions available for this selection."
+            );
 
             location.reload();
 
             return;
         }
 
-        questions = data.results;
+
+        // Store questions
+
+        questions =
+            data.results;
+
+
+        // Create answer arrays
 
         userAnswers =
-            new Array(questions.length).fill(null);
+            new Array(
+                questions.length
+            ).fill(null);
+
+
+        // Create review arrays
 
         reviewQuestions =
-            new Array(questions.length).fill(false);
+            new Array(
+                questions.length
+            ).fill(false);
+
+
+        // Create question buttons
+
+        createQuestionButtons();
+
+
+        // Show first question
 
         showQuestion();
 
-        startTimer();
 
     } catch (error) {
 
-        alert("Internet connection required.");
-
         console.log(error);
+
+
+        alert(
+            "Internet connection is required to load questions."
+        );
+
 
         location.reload();
     }
 }
 
 
-// SHOW QUESTION
+// ================= SHOW QUESTION =================
+
 function showQuestion() {
 
-    selectedAnswer =
-        userAnswers[currentQuestion];
+    // Stop previous timer
 
-    let q =
+    clearInterval(timer);
+
+
+    let question =
         questions[currentQuestion];
 
 
-    document.getElementById("questionNumber").innerText =
+    // Question number
+
+    document
+        .getElementById("questionNumber")
+        .innerText =
         `Question ${currentQuestion + 1} / ${questions.length}`;
 
 
-    document.getElementById("question").innerHTML =
-        decodeHTML(q.question);
+    // Question text
 
+    document
+        .getElementById("question")
+        .innerHTML =
+        decodeHTML(
+            question.question
+        );
+
+
+    // Progress
 
     let progress =
-        (currentQuestion / questions.length) * 100;
+        (
+            (currentQuestion + 1)
+            /
+            questions.length
+        ) * 100;
 
-    document.getElementById("progressBar").style.width =
+
+    document
+        .getElementById("progressBar")
+        .style.width =
         progress + "%";
 
 
+    // Combine answers
+
     let answers = [
-        ...q.incorrect_answers,
-        q.correct_answer
+
+        ...question.incorrect_answers,
+
+        question.correct_answer
+
     ];
 
 
-    answers.sort(() => Math.random() - 0.5);
+    // Randomize answers
 
+    answers.sort(
+        () =>
+            Math.random() - 0.5
+    );
+
+
+    // Create options
 
     let optionsHTML = "";
 
 
-    answers.forEach(answer => {
-
-        let selectedClass =
-            selectedAnswer === answer
-                ? "selected"
-                : "";
+    answers.forEach(
+        function(answer) {
 
 
-        optionsHTML += `
-
-            <div
-                class="option ${selectedClass}"
-                onclick="selectAnswer(this)"
-                data-answer="${encodeURIComponent(answer)}"
-            >
-
-                ${decodeHTML(answer)}
-
-            </div>
-
-        `;
-    });
+            let selectedClass =
+                "";
 
 
-    document.getElementById("options").innerHTML =
+            // Restore selected answer
+
+            if (
+                userAnswers[currentQuestion]
+                === answer
+            ) {
+
+                selectedClass =
+                    "selected";
+            }
+
+
+            optionsHTML += `
+
+                <div
+                    class="option ${selectedClass}"
+                    data-answer="${encodeURIComponent(answer)}"
+                    onclick="selectAnswer(this)"
+                >
+
+                    ${decodeHTML(answer)}
+
+                </div>
+
+            `;
+
+        }
+    );
+
+
+    document
+        .getElementById("options")
+        .innerHTML =
         optionsHTML;
 
 
-    if (reviewQuestions[currentQuestion]) {
+    // Review status
 
-        document.getElementById("reviewStatus").innerText =
+    if (
+        reviewQuestions[currentQuestion]
+    ) {
+
+        document
+            .getElementById("reviewStatus")
+            .innerText =
             "🚩 Marked for Review";
 
     } else {
 
-        document.getElementById("reviewStatus").innerText =
+        document
+            .getElementById("reviewStatus")
+            .innerText =
             "";
     }
 
+
+    // Update palette
+
+    updateQuestionButtons();
+
+
+    // Start 30-second timer
 
     startQuestionTimer();
 }
 
 
-// SELECT ANSWER
+// ================= SELECT ANSWER =================
+
 function selectAnswer(element) {
 
-    document.querySelectorAll(".option")
-        .forEach(option => {
 
-            option.classList.remove("selected");
+    // Remove previous selection
 
-        });
+    document
+        .querySelectorAll(".option")
+        .forEach(
+            function(option) {
+
+                option
+                    .classList
+                    .remove("selected");
+
+            }
+        );
 
 
-    element.classList.add("selected");
+    // Select current option
+
+    element
+        .classList
+        .add("selected");
 
 
-    selectedAnswer =
-        decodeURIComponent(element.dataset.answer);
-
+    // Save answer
 
     userAnswers[currentQuestion] =
-        selectedAnswer;
+        decodeURIComponent(
+            element.dataset.answer
+        );
+
+
+    // Update question palette
+
+    updateQuestionButtons();
 }
 
 
-// SAVE AND NEXT
+// ================= SAVE & NEXT =================
+
 function saveNext() {
 
-    if (selectedAnswer !== null) {
 
-        userAnswers[currentQuestion] =
-            selectedAnswer;
-    }
+    // Last question
 
-
-    if (currentQuestion === questions.length - 1) {
+    if (
+        currentQuestion
+        ===
+        questions.length - 1
+    ) {
 
         finishQuiz();
 
@@ -213,265 +367,619 @@ function saveNext() {
     }
 
 
+    // Go to next question
+
     currentQuestion++;
+
 
     showQuestion();
 }
 
 
-// MARK FOR REVIEW
+// ================= MARK REVIEW =================
+
 function markReview() {
 
-    reviewQuestions[currentQuestion] = true;
 
-    document.getElementById("reviewStatus").innerText =
-        "🚩 Marked for Review";
+    // Toggle review
 
+    reviewQuestions[currentQuestion] =
+        !reviewQuestions[currentQuestion];
+
+
+    // Show status
+
+    if (
+        reviewQuestions[currentQuestion]
+    ) {
+
+        document
+            .getElementById("reviewStatus")
+            .innerText =
+            "🚩 Marked for Review";
+
+    } else {
+
+        document
+            .getElementById("reviewStatus")
+            .innerText =
+            "";
+    }
+
+
+    // Update buttons
+
+    updateQuestionButtons();
 }
 
 
-// TIMER
+// ================= 30 SECOND TIMER =================
+
 function startQuestionTimer() {
 
+
+    // Stop old timer
+
     clearInterval(timer);
+
+
+    // Reset to 30 seconds
 
     timeLeft = 30;
 
-    document.getElementById("timer").innerText =
+
+    document
+        .getElementById("timer")
+        .innerText =
         timeLeft;
 
 
-    timer = setInterval(function() {
+    // Start countdown
 
-        timeLeft--;
+    timer =
+        setInterval(
+            function() {
 
-        document.getElementById("timer").innerText =
-            timeLeft;
+
+                timeLeft--;
 
 
-        if (timeLeft <= 0) {
+                document
+                    .getElementById("timer")
+                    .innerText =
+                    timeLeft;
 
-            clearInterval(timer);
 
-            // Automatically move to next question
+                // Time finished
 
-            if (currentQuestion === questions.length - 1) {
+                if (
+                    timeLeft <= 0
+                ) {
 
-                finishQuiz();
 
-            } else {
+                    clearInterval(timer);
 
-                currentQuestion++;
 
-                showQuestion();
+                    // Last question
 
-            }
-        }
+                    if (
+                        currentQuestion
+                        ===
+                        questions.length - 1
+                    ) {
 
-    }, 1000);
+                        finishQuiz();
+
+                    } else {
+
+
+                        // Automatically next
+
+                        currentQuestion++;
+
+
+                        showQuestion();
+
+                    }
+
+                }
+
+
+            },
+            1000
+        );
 }
 
 
-// FINISH QUIZ
+// ================= QUESTION BUTTONS =================
+
+function createQuestionButtons() {
+
+
+    let container =
+        document
+            .getElementById(
+                "questionButtons"
+            );
+
+
+    container.innerHTML = "";
+
+
+    questions.forEach(
+        function(question, index) {
+
+
+            let button =
+                document.createElement(
+                    "button"
+                );
+
+
+            button.className =
+                "questionBtn";
+
+
+            button.innerText =
+                index + 1;
+
+
+            button.onclick =
+                function() {
+
+
+                    currentQuestion =
+                        index;
+
+
+                    showQuestion();
+
+                };
+
+
+            container.appendChild(
+                button
+            );
+
+        }
+    );
+}
+
+
+// ================= UPDATE QUESTION BUTTONS =================
+
+function updateQuestionButtons() {
+
+
+    let buttons =
+        document
+            .querySelectorAll(
+                ".questionBtn"
+            );
+
+
+    buttons.forEach(
+        function(button, index) {
+
+
+            // Reset
+
+            button.className =
+                "questionBtn";
+
+
+            // Current question
+
+            if (
+                index
+                ===
+                currentQuestion
+            ) {
+
+                button.classList
+                    .add("current");
+            }
+
+
+            // Answered
+
+            if (
+                userAnswers[index]
+                !==
+                null
+            ) {
+
+                button.classList
+                    .add("answered");
+            }
+
+
+            // Review
+
+            if (
+                reviewQuestions[index]
+            ) {
+
+                button.classList
+                    .add("review");
+            }
+
+        }
+    );
+}
+
+
+// ================= FINISH QUIZ =================
+
 function finishQuiz() {
+
+
+    // Stop timer
 
     clearInterval(timer);
 
 
-    score = 0;
-
-    let wrong = 0;
-
-    let unanswered = 0;
+    let correct =
+        0;
 
 
-    questions.forEach((question, index) => {
-
-        let answer =
-            userAnswers[index];
+    let wrong =
+        0;
 
 
-        if (answer === null) {
+    let unanswered =
+        0;
 
-            unanswered++;
 
-        } else if (answer === question.correct_answer) {
+    // Calculate result
 
-            score++;
+    questions.forEach(
+        function(question, index) {
 
-        } else {
 
-            wrong++;
+            let answer =
+                userAnswers[index];
+
+
+            // No answer
+
+            if (
+                answer === null
+            ) {
+
+                unanswered++;
+
+            }
+
+
+            // Correct
+
+            else if (
+                answer
+                ===
+                question.correct_answer
+            ) {
+
+                correct++;
+
+            }
+
+
+            // Wrong
+
+            else {
+
+                wrong++;
+            }
+
         }
+    );
 
-    });
 
+    // Percentage
 
     let percentage =
         Math.round(
-            (score / questions.length) * 100
+            (
+                correct
+                /
+                questions.length
+            ) * 100
         );
 
 
-    document.getElementById("quizScreen").style.display =
+    // Hide quiz
+
+    document
+        .getElementById("quizScreen")
+        .style.display =
         "none";
 
 
-    document.getElementById("resultScreen").style.display =
+    // Show result
+
+    document
+        .getElementById("resultScreen")
+        .style.display =
         "block";
 
 
-    document.getElementById("resultName").innerText =
+    // Student name
+
+    document
+        .getElementById("resultName")
+        .innerText =
         "Student: " + studentName;
 
 
-    document.getElementById("totalQuestions").innerText =
+    // Total
+
+    document
+        .getElementById("totalQuestions")
+        .innerText =
         questions.length;
 
 
-    document.getElementById("correctAnswers").innerText =
-        score;
+    // Correct
+
+    document
+        .getElementById("correctAnswers")
+        .innerText =
+        correct;
 
 
-    document.getElementById("wrongAnswers").innerText =
+    // Wrong
+
+    document
+        .getElementById("wrongAnswers")
+        .innerText =
         wrong;
 
 
-    document.getElementById("unanswered").innerText =
+    // Unanswered
+
+    document
+        .getElementById("unanswered")
+        .innerText =
         unanswered;
 
 
-    document.getElementById("resultPercentage").innerText =
+    // Percentage
+
+    document
+        .getElementById("resultPercentage")
+        .innerText =
         percentage + "%";
 
+
+    // Show detailed answers
 
     showAnswerReview();
 }
 
 
-// SHOW ANSWERS
+// ================= ANSWER REVIEW =================
+
 function showAnswerReview() {
 
-    let html = "";
+
+    let html =
+        "";
 
 
-    questions.forEach((question, index) => {
-
-        let userAnswer =
-            userAnswers[index];
+    questions.forEach(
+        function(question, index) {
 
 
-        let correctAnswer =
-            question.correct_answer;
+            let userAnswer =
+                userAnswers[index];
 
 
-        let questionText =
-            decodeHTML(question.question);
+            let correctAnswer =
+                question.correct_answer;
 
 
-        let correctText =
-            decodeHTML(correctAnswer);
+            let questionText =
+                decodeHTML(
+                    question.question
+                );
 
 
-        let userText =
-            userAnswer === null
-                ? "Not Answered"
-                : decodeHTML(userAnswer);
+            let correctText =
+                decodeHTML(
+                    correctAnswer
+                );
 
 
-        if (userAnswer === null) {
+            // ================= UNANSWERED =================
 
-            html += `
+            if (
+                userAnswer === null
+            ) {
 
-                <div class="reviewCard unansweredCard">
 
-                    <div class="reviewQuestion">
-                        Q${index + 1}. ${questionText}
+                html += `
+
+                    <div
+                        class="reviewCard unansweredCard"
+                    >
+
+                        <div
+                            class="reviewQuestion"
+                        >
+
+                            Q${index + 1}.
+                            ${questionText}
+
+                        </div>
+
+
+                        <p>
+
+                            Your Answer:
+
+                            <span
+                                class="wrongText"
+                            >
+
+                                Not Answered
+
+                            </span>
+
+                        </p>
+
+
+                        <p>
+
+                            Correct Answer:
+
+                            <span
+                                class="correctAnswer"
+                            >
+
+                                ${correctText} ✓
+
+                            </span>
+
+                        </p>
+
                     </div>
 
-                    <p>
-                        Your Answer:
-                        <span class="wrongText">
-                            Not Answered
-                        </span>
-                    </p>
+                `;
 
-                    <p>
-                        Correct Answer:
-                        <span class="correctAnswer">
-                            ${correctText}
-                        </span>
-                    </p>
+            }
 
-                </div>
 
-            `;
+            // ================= CORRECT =================
 
-        } else if (userAnswer === correctAnswer) {
+            else if (
+                userAnswer
+                ===
+                correctAnswer
+            ) {
 
-            html += `
 
-                <div class="reviewCard correctCard">
+                html += `
 
-                    <div class="reviewQuestion">
-                        Q${index + 1}. ${questionText}
+                    <div
+                        class="reviewCard correctCard"
+                    >
+
+                        <div
+                            class="reviewQuestion"
+                        >
+
+                            Q${index + 1}.
+                            ${questionText}
+
+                        </div>
+
+
+                        <p>
+
+                            Your Answer:
+
+                            <span
+                                class="correctText"
+                            >
+
+                                ${decodeHTML(userAnswer)}
+                                ✓
+
+                            </span>
+
+                        </p>
+
                     </div>
 
-                    <p>
-                        Your Answer:
-                        <span class="correctText">
-                            ${userText} ✓
-                        </span>
-                    </p>
+                `;
 
-                </div>
+            }
 
-            `;
 
-        } else {
+            // ================= WRONG =================
 
-            html += `
+            else {
 
-                <div class="reviewCard wrongCard">
 
-                    <div class="reviewQuestion">
-                        Q${index + 1}. ${questionText}
+                html += `
+
+                    <div
+                        class="reviewCard wrongCard"
+                    >
+
+                        <div
+                            class="reviewQuestion"
+                        >
+
+                            Q${index + 1}.
+                            ${questionText}
+
+                        </div>
+
+
+                        <p>
+
+                            Your Answer:
+
+                            <span
+                                class="wrongText"
+                            >
+
+                                ${decodeHTML(userAnswer)}
+                                ✗
+
+                            </span>
+
+                        </p>
+
+
+                        <p>
+
+                            Correct Answer:
+
+                            <span
+                                class="correctAnswer"
+                            >
+
+                                ${correctText}
+                                ✓
+
+                            </span>
+
+                        </p>
+
                     </div>
 
-                    <p>
-                        Your Answer:
-                        <span class="wrongText">
-                            ${userText} ✗
-                        </span>
-                    </p>
+                `;
 
-                    <p>
-                        Correct Answer:
-                        <span class="correctAnswer">
-                            ${correctText} ✓
-                        </span>
-                    </p>
+            }
 
-                </div>
-
-            `;
         }
+    );
 
-    });
 
-
-    document.getElementById("answerReview").innerHTML =
+    document
+        .getElementById("answerReview")
+        .innerHTML =
         html;
 }
 
 
-// DECODE HTML
+// ================= DECODE HTML =================
+
 function decodeHTML(text) {
 
-    let textarea =
-        document.createElement("textarea");
 
-    textarea.innerHTML = text;
+    let textarea =
+        document.createElement(
+            "textarea"
+        );
+
+
+    textarea.innerHTML =
+        text;
+
 
     return textarea.value;
 }
