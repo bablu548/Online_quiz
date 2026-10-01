@@ -1,10 +1,20 @@
 let questions = [];
+
 let currentQuestion = 0;
+
 let score = 0;
+
 let selectedAnswer = null;
+
 let studentName = "";
-let timeLeft = 60;
+
+let timeLeft = 30;
+
 let timer;
+
+let userAnswers = [];
+
+let reviewQuestions = [];
 
 
 // START QUIZ
@@ -34,8 +44,11 @@ async function startQuiz() {
         url += `&difficulty=${difficulty}`;
     }
 
-    document.getElementById("startScreen").style.display = "none";
-    document.getElementById("quizScreen").style.display = "block";
+    document.getElementById("startScreen").style.display =
+        "none";
+
+    document.getElementById("quizScreen").style.display =
+        "block";
 
     document.getElementById("question").innerText =
         "Loading questions...";
@@ -47,19 +60,29 @@ async function startQuiz() {
         const data = await response.json();
 
         if (data.response_code !== 0) {
+
             alert("Not enough questions available.");
+
             location.reload();
+
             return;
         }
 
         questions = data.results;
 
+        userAnswers =
+            new Array(questions.length).fill(null);
+
+        reviewQuestions =
+            new Array(questions.length).fill(false);
+
         showQuestion();
+
         startTimer();
 
     } catch (error) {
 
-        alert("Internet connection required to load questions.");
+        alert("Internet connection required.");
 
         console.log(error);
 
@@ -71,18 +94,23 @@ async function startQuiz() {
 // SHOW QUESTION
 function showQuestion() {
 
-    selectedAnswer = null;
+    selectedAnswer =
+        userAnswers[currentQuestion];
 
-    let q = questions[currentQuestion];
+    let q =
+        questions[currentQuestion];
+
 
     document.getElementById("questionNumber").innerText =
         `Question ${currentQuestion + 1} / ${questions.length}`;
 
+
     document.getElementById("question").innerHTML =
         decodeHTML(q.question);
 
+
     let progress =
-        ((currentQuestion) / questions.length) * 100;
+        (currentQuestion / questions.length) * 100;
 
     document.getElementById("progressBar").style.width =
         progress + "%";
@@ -93,70 +121,125 @@ function showQuestion() {
         q.correct_answer
     ];
 
+
     answers.sort(() => Math.random() - 0.5);
+
 
     let optionsHTML = "";
 
-    answers.forEach((answer, index) => {
+
+    answers.forEach(answer => {
+
+        let selectedClass =
+            selectedAnswer === answer
+                ? "selected"
+                : "";
+
 
         optionsHTML += `
-            <div class="option"
-                 onclick="selectAnswer(this, ${index})"
-                 data-answer="${encodeURIComponent(answer)}">
+
+            <div
+                class="option ${selectedClass}"
+                onclick="selectAnswer(this)"
+                data-answer="${encodeURIComponent(answer)}"
+            >
+
                 ${decodeHTML(answer)}
+
             </div>
+
         `;
     });
 
+
     document.getElementById("options").innerHTML =
         optionsHTML;
+
+
+    if (reviewQuestions[currentQuestion]) {
+
+        document.getElementById("reviewStatus").innerText =
+            "🚩 Marked for Review";
+
+    } else {
+
+        document.getElementById("reviewStatus").innerText =
+            "";
+    }
+
+
+    startQuestionTimer();
 }
 
 
 // SELECT ANSWER
-function selectAnswer(element, index) {
+function selectAnswer(element) {
 
-    document.querySelectorAll(".option").forEach(option => {
-        option.classList.remove("selected");
-    });
+    document.querySelectorAll(".option")
+        .forEach(option => {
+
+            option.classList.remove("selected");
+
+        });
+
 
     element.classList.add("selected");
 
+
     selectedAnswer =
         decodeURIComponent(element.dataset.answer);
+
+
+    userAnswers[currentQuestion] =
+        selectedAnswer;
 }
 
 
-// NEXT QUESTION
-function nextQuestion() {
+// SAVE AND NEXT
+function saveNext() {
 
-    if (selectedAnswer === null) {
-        alert("Please select an answer");
+    if (selectedAnswer !== null) {
+
+        userAnswers[currentQuestion] =
+            selectedAnswer;
+    }
+
+
+    if (currentQuestion === questions.length - 1) {
+
+        finishQuiz();
+
         return;
     }
 
-    let correctAnswer =
-        questions[currentQuestion].correct_answer;
-
-    if (selectedAnswer === correctAnswer) {
-        score++;
-    }
 
     currentQuestion++;
 
-    if (currentQuestion < questions.length) {
+    showQuestion();
+}
 
-        showQuestion();
 
-    } else {
+// MARK FOR REVIEW
+function markReview() {
 
-        finishQuiz();
-    }
+    reviewQuestions[currentQuestion] = true;
+
+    document.getElementById("reviewStatus").innerText =
+        "🚩 Marked for Review";
+
 }
 
 
 // TIMER
-function startTimer() {
+function startQuestionTimer() {
+
+    clearInterval(timer);
+
+    timeLeft = 30;
+
+    document.getElementById("timer").innerText =
+        timeLeft;
+
 
     timer = setInterval(function() {
 
@@ -165,11 +248,24 @@ function startTimer() {
         document.getElementById("timer").innerText =
             timeLeft;
 
+
         if (timeLeft <= 0) {
 
             clearInterval(timer);
 
-            finishQuiz();
+            // Automatically move to next question
+
+            if (currentQuestion === questions.length - 1) {
+
+                finishQuiz();
+
+            } else {
+
+                currentQuestion++;
+
+                showQuestion();
+
+            }
         }
 
     }, 1000);
@@ -181,42 +277,195 @@ function finishQuiz() {
 
     clearInterval(timer);
 
+
+    score = 0;
+
+    let wrong = 0;
+
+    let unanswered = 0;
+
+
+    questions.forEach((question, index) => {
+
+        let answer =
+            userAnswers[index];
+
+
+        if (answer === null) {
+
+            unanswered++;
+
+        } else if (answer === question.correct_answer) {
+
+            score++;
+
+        } else {
+
+            wrong++;
+        }
+
+    });
+
+
+    let percentage =
+        Math.round(
+            (score / questions.length) * 100
+        );
+
+
     document.getElementById("quizScreen").style.display =
         "none";
+
 
     document.getElementById("resultScreen").style.display =
         "block";
 
-    let percentage =
-        Math.round((score / questions.length) * 100);
 
     document.getElementById("resultName").innerText =
         "Student: " + studentName;
 
-    document.getElementById("resultScore").innerText =
-        `Score: ${score} / ${questions.length}`;
+
+    document.getElementById("totalQuestions").innerText =
+        questions.length;
+
+
+    document.getElementById("correctAnswers").innerText =
+        score;
+
+
+    document.getElementById("wrongAnswers").innerText =
+        wrong;
+
+
+    document.getElementById("unanswered").innerText =
+        unanswered;
+
 
     document.getElementById("resultPercentage").innerText =
-        `${percentage}%`;
+        percentage + "%";
 
-    let message = "";
 
-    if (percentage >= 80) {
-        message = "Excellent performance!";
-    } else if (percentage >= 60) {
-        message = "Good job!";
-    } else if (percentage >= 40) {
-        message = "Keep practicing!";
-    } else {
-        message = "You can improve with more practice.";
-    }
-
-    document.getElementById("resultMessage").innerText =
-        message;
+    showAnswerReview();
 }
 
 
-// DECODE ONLINE QUESTIONS
+// SHOW ANSWERS
+function showAnswerReview() {
+
+    let html = "";
+
+
+    questions.forEach((question, index) => {
+
+        let userAnswer =
+            userAnswers[index];
+
+
+        let correctAnswer =
+            question.correct_answer;
+
+
+        let questionText =
+            decodeHTML(question.question);
+
+
+        let correctText =
+            decodeHTML(correctAnswer);
+
+
+        let userText =
+            userAnswer === null
+                ? "Not Answered"
+                : decodeHTML(userAnswer);
+
+
+        if (userAnswer === null) {
+
+            html += `
+
+                <div class="reviewCard unansweredCard">
+
+                    <div class="reviewQuestion">
+                        Q${index + 1}. ${questionText}
+                    </div>
+
+                    <p>
+                        Your Answer:
+                        <span class="wrongText">
+                            Not Answered
+                        </span>
+                    </p>
+
+                    <p>
+                        Correct Answer:
+                        <span class="correctAnswer">
+                            ${correctText}
+                        </span>
+                    </p>
+
+                </div>
+
+            `;
+
+        } else if (userAnswer === correctAnswer) {
+
+            html += `
+
+                <div class="reviewCard correctCard">
+
+                    <div class="reviewQuestion">
+                        Q${index + 1}. ${questionText}
+                    </div>
+
+                    <p>
+                        Your Answer:
+                        <span class="correctText">
+                            ${userText} ✓
+                        </span>
+                    </p>
+
+                </div>
+
+            `;
+
+        } else {
+
+            html += `
+
+                <div class="reviewCard wrongCard">
+
+                    <div class="reviewQuestion">
+                        Q${index + 1}. ${questionText}
+                    </div>
+
+                    <p>
+                        Your Answer:
+                        <span class="wrongText">
+                            ${userText} ✗
+                        </span>
+                    </p>
+
+                    <p>
+                        Correct Answer:
+                        <span class="correctAnswer">
+                            ${correctText} ✓
+                        </span>
+                    </p>
+
+                </div>
+
+            `;
+        }
+
+    });
+
+
+    document.getElementById("answerReview").innerHTML =
+        html;
+}
+
+
+// DECODE HTML
 function decodeHTML(text) {
 
     let textarea =
